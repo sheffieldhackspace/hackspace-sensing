@@ -48,7 +48,7 @@ void loop() {
   delay(1000);
 
   Serial.println("LED ON (MQTT)");
-  client.publish(MQTT_TOPIC, "18.942");
+  client.publish(MQTT_TOPIC, "18.294", true);
   digitalWrite(LED_BUILTIN, LOW);
 
   delay(5000);
@@ -66,7 +66,7 @@ void loop() {
       // clientId += String(random(0xffff), HEX);
       if (client.connect(HOSTNAME)) {
         Serial.println("connected");
-        client.publish(MQTT_TOPIC, "hello world");
+        client.publish(MQTT_TOPIC, "hello world", true);
       } else {
         Serial.print("failed, rc=");
         Serial.print(client.state());
