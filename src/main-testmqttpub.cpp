@@ -17,6 +17,10 @@ const char *password = WIFI_PASSWORD;
 // mqtt
 #include <PubSubClient.h>
 PubSubClient client(espClient);
+#define MQTT_TOPIC_STATUS MQTT_TOPIC_ROOT "status"
+#define MQTT_TOPIC_TEMPERATURE MQTT_TOPIC_ROOT "temperature"
+
+void mqtt_reconnect();
 
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
@@ -48,7 +52,7 @@ void loop() {
   delay(1000);
 
   Serial.println("LED ON (MQTT)");
-  client.publish(MQTT_TOPIC, "18.294", true);
+  client.publish(MQTT_TOPIC_TEMPERATURE, "18.294", true);
   digitalWrite(LED_BUILTIN, LOW);
 
   delay(5000);
@@ -60,21 +64,23 @@ void loop() {
 
   // mqtt - check connection and reset if needed
   if (!client.connected()) {
-    Serial.print("Attempting MQTT connection...");
-    while (!client.connected()) {
-      // String clientId = "ESP8266Client-";
-      // clientId += String(random(0xffff), HEX);
-      if (client.connect(HOSTNAME)) {
-        Serial.println("connected");
-        client.publish(MQTT_TOPIC, "hello world", true);
-      } else {
-        Serial.print("failed, rc=");
-        Serial.print(client.state());
-        Serial.println(" try again in 5 seconds");
-        // Wait 5 seconds before retrying
-        delay(5000);
-      }
-    }
+    mqtt_reconnect();
   }
   client.loop();
+}
+
+void mqtt_reconnect() {
+  Serial.print("Attempting MQTT connection...");
+  while (!client.connected()) {
+    if (client.connect(HOSTNAME)) {
+      Serial.println("connected");
+      client.publish(MQTT_TOPIC_STATUS, "on", true);
+    } else {
+      Serial.print("failed, rc=");
+      Serial.print(client.state());
+      Serial.println(" try again in 5 seconds");
+      // Wait 5 seconds before retrying
+      delay(5000);
+    }
+  }
 }
