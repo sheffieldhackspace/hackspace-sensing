@@ -6,6 +6,8 @@ uses this MQTT library: <https://github.com/knolleary/pubsubclient>
 
 See sensor information: https://wiki.sheffieldhackspace.org.uk/members/projects/monitoring
 
+![picture of ESP8266 and SCD40 sensors on a breadboard attached to 3-pin power plug via USB](./sensor.png)
+
 ## Build using PlatformIO
 
 First, edit `secrets.h` to make sure you're using the correct MQTT topic etc.
