@@ -82,7 +82,7 @@ void loop() {
   // manufacturer, thus the library drops the measurements obtained during the
   // first 10s of each run.
 
-  constexpr uint32_t down_s = 210;
+  constexpr uint32_t down_s = 10;
 
   stop_SDS();
   Serial.print(F("stopped SDS011 (is running = "));
@@ -96,7 +96,7 @@ void loop() {
     sds011.perform_work();
   }
 
-  constexpr uint32_t duty_s = 30;
+  constexpr uint32_t duty_s = 10;
 
   start_SDS();
   Serial.print(F("started SDS011 (is running = "));
