@@ -10,13 +10,8 @@
 #define SDS_PIN_RX 3 // Remap to GPIO 8 (SDA)
 #define SDS_PIN_TX 4 // Remap to GPIO 9 (SCL)
 
-#ifdef ESP32
-HardwareSerial &serialSDS(Serial2);
-Sds011Async<HardwareSerial> sds011(serialSDS);
-#else
 EspSoftwareSerial::UART serialSDS;
 Sds011Async<EspSoftwareSerial::UART> sds011(serialSDS);
-#endif
 
 // The example stops the sensor for 210s, then runs it for 30s, then repeats.
 // At tablesizes 20 and below, the tables get filled during duty cycle
@@ -55,12 +50,7 @@ void stop_SDS() {
 void setup() {
   Serial.begin(115200);
 
-#ifdef ESP32
-  serialSDS.begin(9600, SERIAL_8N1, SDS_PIN_RX, SDS_PIN_TX);
-  delay(100);
-#else
   serialSDS.begin(9600, SWSERIAL_8N1, SDS_PIN_RX, SDS_PIN_TX, false, 192);
-#endif
 
   Serial.println(F("SDS011 start/stop and reporting sample"));
 
