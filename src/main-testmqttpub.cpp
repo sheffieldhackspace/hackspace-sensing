@@ -7,13 +7,24 @@
 
 // secrets
 #include <secrets.h>
+
 // arduino
 #include "Arduino.h"
+
 // wifi
+#if defined(ARDUINO_ARCH_ESP8266)
 #include <ESP8266WiFi.h>
+// do one thing
+#elif defined(ESP32)
+#include <WiFi.h>
+// do another
+#else
+#error Architecture unrecognized by this code.
+#endif
 WiFiClient espClient;
 const char *ssid = WIFI_SSID;
 const char *password = WIFI_PASSWORD;
+
 // mqtt
 #include <PubSubClient.h>
 PubSubClient client(espClient);
