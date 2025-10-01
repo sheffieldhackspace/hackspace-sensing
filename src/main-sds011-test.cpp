@@ -1,8 +1,8 @@
-/*
-    Name:       measure.ino
-    Created:	2019-04-06 12:16:00
-    Author:     Dirk O. Kaar <dok@dok-net.net>
-*/
+/**
+ * particulate monitor test
+ * contains bug: if fan does not spin up immediately on reset, restart until it
+ * does (gets stuck in loop trying to disable fan when it is already off)
+ */
 
 #include <SoftwareSerial.h>
 #include <esp_sds011.h>
@@ -106,10 +106,10 @@ void loop() {
   // manufacturer, thus the library drops the measurements obtained during the
   // first 10s of each run.
 
-  sds011.perform_work();
   if (millis() - lastSerialTimerMsg > 1000) {
     Serial.println(static_cast<int32_t>(deadline - millis()) / 1000);
     lastSerialTimerMsg = millis();
+    sds011.perform_work();
   }
 
   // waiting
@@ -118,7 +118,10 @@ void loop() {
     if (static_cast<int32_t>(deadline - millis()) < 0) {
       deadline = millis() + duty_s * 1000;
       sds_state = 2;
-      start_SDS();
+      while (is_SDS_running != true) {
+        start_SDS();
+        delay(100);
+      }
       Serial.print(F("started SDS011, is running = "));
       Serial.println(is_SDS_running);
       if (!sds011.query_data_auto_async(pm_tablesize, pm25_table, pm10_table)) {
@@ -132,7 +135,10 @@ void loop() {
     // enter stopped state
     if (static_cast<int32_t>(deadline - millis()) < 0) {
       deadline = millis() + down_s * 1000;
-      stop_SDS();
+      while (is_SDS_running != false) {
+        stop_SDS();
+        delay(100);
+      }
       sds_state = 1;
       Serial.print(F("stopped SDS011, is running = "));
       Serial.println(is_SDS_running);
