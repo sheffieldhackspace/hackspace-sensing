@@ -24,6 +24,11 @@ constexpr int pm_tablesize = 20;
 int pm25_table[pm_tablesize];
 int pm10_table[pm_tablesize];
 
+constexpr uint32_t down_s = 30; // waiting (fan off) time, default 210
+constexpr uint32_t duty_s = 30; // measuring (fan on) time, default 30
+uint32_t deadline;
+uint32_t lastSerialTimerMsg = 0;
+int sds_state = 1; // 1 - waiting (fan off), 2 - measuring (fan on)
 bool is_SDS_running = true;
 
 void start_SDS() {
@@ -72,36 +77,6 @@ void setup() {
           F("Sds011::set_data_reporting_mode(Sds011::REPORT_ACTIVE) failed"));
     }
   }
-}
-
-// Add the main program code into the continuous loop() function
-void loop() {
-  // Per manufacturer specification, place the sensor in standby to prolong
-  // service life. At an user-determined interval (here 210s down plus 30s duty
-  // = 4m), run the sensor for 30s. Quick response time is given as 10s by the
-  // manufacturer, thus the library drops the measurements obtained during the
-  // first 10s of each run.
-
-  constexpr uint32_t down_s = 10;
-
-  stop_SDS();
-  Serial.print(F("stopped SDS011 (is running = "));
-  Serial.print(is_SDS_running);
-  Serial.println(')');
-
-  uint32_t deadline = millis() + down_s * 1000;
-  while (static_cast<int32_t>(deadline - millis()) > 0) {
-    delay(1000);
-    Serial.println(static_cast<int32_t>(deadline - millis()) / 1000);
-    sds011.perform_work();
-  }
-
-  constexpr uint32_t duty_s = 10;
-
-  start_SDS();
-  Serial.print(F("started SDS011 (is running = "));
-  Serial.print(is_SDS_running);
-  Serial.println(')');
 
   sds011.on_query_data_auto_completed([](int n) {
     Serial.println(F("Begin Handling SDS011 query data"));
@@ -119,14 +94,51 @@ void loop() {
     Serial.println(F("End Handling SDS011 query data"));
   });
 
-  if (!sds011.query_data_auto_async(pm_tablesize, pm25_table, pm10_table)) {
-    Serial.println(F("measurement capture start failed"));
+  deadline = millis() + down_s * 1000;
+}
+
+// Add the main program code into the continuous loop() function
+void loop() {
+  // Per manufacturer specification, place the sensor in standby to prolong
+  // service life. At an user-determined interval (here 210s down plus 30s duty
+  // = 4m), run the sensor for 30s. Quick response time is given as 10s by the
+  // manufacturer, thus the library drops the measurements obtained during the
+  // first 10s of each run.
+
+  sds011.perform_work();
+  if (millis() - lastSerialTimerMsg > 1000) {
+    Serial.println(static_cast<int32_t>(deadline - millis()) / 1000);
+    lastSerialTimerMsg = millis();
   }
 
-  deadline = millis() + duty_s * 1000;
-  while (static_cast<int32_t>(deadline - millis()) > 0) {
-    delay(1000);
-    Serial.println(static_cast<int32_t>(deadline - millis()) / 1000);
-    sds011.perform_work();
+  // waiting
+  if (sds_state == 1) {
+    // enter measuring state
+    if (static_cast<int32_t>(deadline - millis()) < 0) {
+      deadline = millis() + duty_s * 1000;
+      sds_state = 2;
+      start_SDS();
+      Serial.print(F("started SDS011, is running = "));
+      Serial.println(is_SDS_running);
+      if (!sds011.query_data_auto_async(pm_tablesize, pm25_table, pm10_table)) {
+        Serial.println(F("measurement capture start failed"));
+      }
+      Serial.print("wait s ");
+      Serial.println(duty_s);
+    }
+
+  } else if (sds_state == 2) {
+    // enter stopped state
+    if (static_cast<int32_t>(deadline - millis()) < 0) {
+      deadline = millis() + down_s * 1000;
+      stop_SDS();
+      sds_state = 1;
+      Serial.print(F("stopped SDS011, is running = "));
+      Serial.println(is_SDS_running);
+      Serial.print("wait s ");
+      Serial.println(down_s);
+    }
+  } else {
+    Serial.println("stuck in a very strange state");
   }
 }
