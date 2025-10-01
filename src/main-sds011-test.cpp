@@ -28,7 +28,7 @@ constexpr uint32_t down_s = 30; // waiting (fan off) time, default 210
 constexpr uint32_t duty_s = 30; // measuring (fan on) time, default 30
 uint32_t deadline;
 uint32_t lastSerialTimerMsg = 0;
-int sds_state = 1; // 1 - waiting (fan off), 2 - measuring (fan on)
+int sds_state; // 1 - waiting (fan off), 2 - measuring (fan on)
 bool is_SDS_running = true;
 
 void start_SDS() {
@@ -94,7 +94,8 @@ void setup() {
     Serial.println(F("End Handling SDS011 query data"));
   });
 
-  deadline = millis() + down_s * 1000;
+  deadline = millis() + duty_s * 1000;
+  sds_state = 2;
 }
 
 // Add the main program code into the continuous loop() function
